@@ -1,0 +1,1438 @@
+<!DOCTYPE html><html><head>
+    <title>Reacton Basics</title>
+    <meta charset="utf-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+    <link rel="icon" type="image/png" sizes="any" href="/static/assets/favicon.png">
+    <link rel="icon" type="image/svg+xml" href="/static/assets/favicon.svg">
+
+    
+    
+    <link rel="canonical" href="https://solara.dev/docs/understanding/reacton-basics">
+    
+    
+
+    <link rel="stylesheet" href="/_solara/cdn/@docsearch/css@3/dist/style.css">
+    <script async="" src="//www.google-analytics.com/analytics.js"></script><script src="/_solara/cdn/@docsearch/js@3"></script>
+
+    <!-- Google Analytics -->
+    <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    _solara_skip_use_ga = (window.location.hostname == 'localhost') || (window.location.hostname == '0.0.0.0');
+    if(!_solara_skip_use_ga) {
+        ga('create', 'UA-240047566-1', 'auto');
+        ga('send', 'pageview');
+    }
+    </script>
+    <!-- End Google Analytics -->
+    
+
+
+    
+
+    <link href="/_solara/cdn/@widgetti/solara-vuetify-app@5.0.2/dist/main.css" rel="stylesheet">
+
+
+    
+    <link rel="stylesheet" href="/_solara/cdn/font-awesome@4.5.0/css/font-awesome.min.css" type="text/css">
+    
+    <link href="/static/highlight.css" rel="stylesheet">
+    <link href="/static/highlight-dark.css" rel="stylesheet">
+    
+    <link href="/static/assets/style.css" rel="stylesheet">
+    
+    <link href="/static/assets/index.css" rel="stylesheet">
+    
+    
+    <link href="/static/assets/theme-light.css" rel="stylesheet">
+    
+    
+    <link href="/static/assets/custom.css" rel="stylesheet">
+    
+
+    <script id="jupyter-config-data" type="application/json">
+    {
+        "baseUrl": "/jupyter",
+        "kernelId": "1234"
+    }
+    </script>
+    <style>
+        html,
+body {
+    height: 100vh;
+}
+
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(359deg);
+    }
+}
+
+@keyframes oscillate {
+    0% {
+        transform: scale(0.8);
+    }
+
+    50% {
+        transform: scale(1.0);
+    }
+
+    100% {
+        transform: scale(0.8);
+    }
+}
+
+#sun-spinner1 {
+    animation: spin 6s linear infinite;
+    padding: 10px;
+}
+
+#sun-spinner2 {
+    animation: spin 2s cubic-bezier(.79, .14, .15, .86) infinite;
+    padding: 10px;
+}
+
+#sun-spinner-container {
+    animation: oscillate 2s linear infinite;
+}
+
+@keyframes bounce-in {
+    0% {
+        transform: scale(0);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes bounce-out {
+    0% {
+        transform: translateZ(0) scale(1);
+    }
+
+    100% {
+        transform: translateZ(0) scale(50);
+    }
+}
+
+.solara-transition-enter-active {
+    transition: opacity 0.5s ease;
+    /* animation: bounce-in 0.5s ease; */
+}
+
+.solara-transition-leave-active {
+    transition: opacity 0.5s ease;
+}
+
+.solara-transition-leave-active .solara-loader {
+    animation: bounce-out 0.5s ease;
+}
+
+.solara-transition-leave-active #sun-spinner-container {
+    animation: unset;
+}
+
+.solara-transition-leave-active h1 {
+    visibility: hidden;
+}
+
+.solara-transition-enter,
+.solara-transition-leave-to {
+    opacity: 0;
+}
+
+#sun-spinner-container {
+    overflow: hidden;
+}
+
+#loader-container {
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    margin: 0;
+    padding: 0;
+    z-index: 998;
+}
+
+#loader {
+    position: absolute;
+    width: 100vw;
+    top: 50%;
+    /* position the top  edge of the element at the middle of the parent */
+    left: 50%;
+    /* position the left edge of the element at the middle of the parent */
+
+    margin-left: auto;
+    margin-right: auto;
+    left: 0;
+    right: 0;
+    text-align: center;
+    z-index: 1000;
+    overflow: hidden;
+}
+    </style>
+    
+    <script>
+    if(!_solara_skip_use_ga) {
+        // for client side routing
+        window.addEventListener('solara.router', function(event) {
+            ga('send', 'pageview', window.location.pathname);
+        });
+    }
+    </script>
+
+<script type="x-template" id="vue-app-template" style="display: none">
+    <v-app :key="forceUpdateTrigger" :class="loadingPage ? 'solara-page-loading' : ''">
+        <v-progress-linear :style="{visibility: (kernelBusyLong && isMounted) ? 'visible' : 'hidden'}" indeterminate
+            absolute></v-progress-linear>
+        <v-alert v-if="needsRefresh || cancelAutoRefresh" type="warning" border="left"
+            style="position: absolute; right: 0px; z-index: 100; left: 0px;">
+            App is disconnected, and may not function properly. Please refresh the page.
+        </v-alert>
+        
+        <transition name="solara-transition" :duration="{ enter: 500, leave: 500 }">
+    <div v-if="loading" id="loader-container">
+        <v-container id="loader" key="loader" class="solara-loader">
+            <v-row>
+                <v-col>
+                    <div id="sun-spinner-container">
+                        <!-- <img id="sun-spinner" height="100px" src="static/assets/favicon.svg" /> -->
+                        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink"
+                            xmlns:svgjs="http://svgjs.com/svgjs" width="65" height="65"><svg width="65" height="65"
+                                viewBox="0 0 65 65" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path id="sun-spinner1" style="transform-origin: center;"
+                                    d="M57.11 30.64L61.47 17.87L48.7 13.51L42.76 1.39999L30.65 7.34999L17.87 2.97999L13.51 15.75L1.40002 21.7L7.35002 33.81L2.99002 46.58L15.76 50.94L21.71 63.06L33.82 57.11L46.59 61.47L50.95 48.7L63.06 42.75L57.11 30.64ZM54.26 34.39L34.39 54.26C33.19 55.46 31.25 55.46 30.05 54.26L10.2 34.4C9.00002 33.2 9.00002 31.26 10.2 30.07L30.06 10.2C31.26 8.99999 33.2 8.99999 34.4 10.2L54.27 30.07C55.47 31.27 55.47 33.21 54.27 34.4L54.26 34.39Z"
+                                    fill="#FFCF64"></path>
+                                <path id="sun-spinner2" style="transform-origin: center;"
+                                    d="M53.62 19.42L51.65 6.07L38.3 8.04L27.46 0L19.42 10.84L6.07 12.82L8.04 26.17L0 37L10.84 45.04L12.81 58.39L26.16 56.42L37 64.46L45.04 53.62L58.39 51.64L56.42 38.29L64.46 27.45L53.62 19.4V19.42ZM52.8 24.06L44.24 50.82C43.72 52.43 42 53.32 40.39 52.81L13.63 44.25C12.02 43.74 11.13 42.01 11.64 40.4L20.21 13.64C20.72 12.03 22.45 11.14 24.06 11.65L50.82 20.21C52.43 20.72 53.32 22.45 52.81 24.06H52.8Z"
+                                    fill="#FF8C3E"></path>
+                            </svg>
+                        </svg>
+
+                    </div>
+                    <h1>{{ loading_text }}</h1>
+
+                </v-col>
+            </v-row>
+        </v-container>
+        <div style="right: 50px; bottom: 10px; position: absolute;">
+            <b>Made with <a href="https://solara.dev">Solara</a></b>
+        </div>
+    </div>
+    <div v-if="!loading">
+        <jupyter-widget-mount-point mount-id="solara-main">
+            A widget with mount-id="solara-main" should go here
+        </jupyter-widget-mount-point>
+        <div style="position: absolute; right: 0px; bottom: 0px; padding: 10px;">
+            <b>This website runs on <a href=" https://solara.dev">Solara</a></b>
+        </div>
+    </div>
+</transition>
+
+        <v-overlay :value="(connectionStatus != 'connected') & wasConnected">
+            <v-progress-circular indeterminate size="128" style="text-align: center;">Server
+                disconnected.</v-progress-circular>
+        </v-overlay>
+
+        <v-dialog v-model="needsRefresh" width="500">
+            <v-card>
+                <v-card-title class="text-h5 grey lighten-2">Please refresh the page</v-card-title>
+
+                
+                <v-card-text>
+                    Could not restore session. Please refresh.
+                </v-card-text>
+                
+
+                <v-divider></v-divider>
+
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="secondary" text @click="reload()">
+                        Refresh now
+                    </v-btn>
+                    <v-btn color="primary" text @click="setCancelAutoRefresh()">
+                        Cancel
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+        <v-menu v-if="debug && solaraDebugMessages && solaraDebugMessages.length" offset-y top
+            :close-on-content-click="false">
+            <template v-slot:activator="{ on }">
+                <v-btn text v-on="on" style="position: fixed; bottom: 8px; right: 8px">
+                    <span style="color: red">{{ solaraDebugMessages.length }}</span>
+                    <v-icon right large color="red">mdi-bug-outline</v-icon>
+                </v-btn>
+            </template>
+            <v-sheet class="pa-2" style="overflow: auto; max-height: 80vh">
+                <div style="display: flex" v-for="message in solaraDebugMessages" :key="message.cell" class="pa-2">
+                    <div style="width: 50px">[{{ message.cell }}]</div>
+                    <div v-if="message.traceback" class="jp-RenderedText jp-OutputArea-output"
+                        data-mime-type="application/vnd.jupyter.stderr">
+                        <pre v-html="message.traceback" class="pa-2"></pre>
+                    </div>
+                    <pre v-else><span :style="message.name === 'stderr' ? 'background-color: var(--jp-rendermime-error-background)' : ''"
+                                class="pa-2"
+                            >{{ message.text }}</span>
+                    </pre>
+                </div>
+                <div class="d-flex justify-end">
+                    <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-btn icon v-bind="attrs" v-on="on" @click="solaraDebugMessages = []">
+                                <v-icon>mdi-trash-can-outline</v-icon>
+                            </v-btn>
+                        </template>
+                        <span>Clear messages</span>
+                    </v-tooltip>
+                </div>
+            </v-sheet>
+        </v-menu>
+
+        <v-menu offset-y top :close-on-content-click="false" style="z-index: 100001">
+            <!-- <template v-slot:activator="{ on }">
+                <v-btn text v-on="on" style="position: fixed; top: 8px; right: 8px; z-index: 100000">
+                    <v-icon right large style="opacity: 0.5" :color="connectionStatus != 'connected' ? 'red' : ''">mdi-account</v-icon>
+                </v-btn>
+            </template> -->
+            <v-list>
+                <v-list-item @click="stateReset()" link>
+                    <v-list-item-icon>
+                        <v-icon>mdi-close-box</v-icon>
+                    </v-list-item-icon>
+                    <v-list-item-title>Reset application
+                    </v-list-item-title>
+                </v-list-item>
+                <v-list-item v-if="theme.variant_user_selectable">
+                    <v-btn-toggle v-model="themeVariantIndex" tile group mandatory>
+                        <v-btn value="light" icon>
+                            <v-icon>mdi-white-balance-sunny</v-icon>
+                        </v-btn>
+                        <v-btn>
+                            <v-icon>mdi-weather-night</v-icon>
+                        </v-btn>
+                        <v-btn>
+                            <v-icon>mdi-theme-light-dark</v-icon>
+                        </v-btn>
+                    </v-btn-toggle>
+                </v-list-item>
+
+            </v-list>
+        </v-menu>
+        <!-- <v-menu v-if="debug && outputMessages && outputMessages.length" offset-y top
+            :close-on-content-click="false">
+            <template v-slot:activator="{ on }">
+                <v-btn text v-on="on" style="position: fixed; top: 8px; right: 8px">
+                    <span style="color: #333">{{ outputMessages.length }}</span>
+                    <v-icon right large color="#333">mdi-information-outline</v-icon>
+                </v-btn>
+            </template>
+            <v-sheet class="pa-2" style="overflow: auto; max-height: 80vh">
+                <div style="display: flex" v-for="message in outputMessages" :key="message.cell" class="pa-2">
+                    <div style="width: 50px">[{{ message.cell }}]</div>
+                    <div v-if="message.traceback" class="jp-RenderedText jp-OutputArea-output"
+                        data-mime-type="application/vnd.jupyter.stderr">
+                        <pre v-html="message.traceback" class="pa-2"></pre>
+                    </div>
+                    <pre v-else><span :style="message.name === 'stderr' ? 'background-color: var(--jp-rendermime-error-background)' : ''"
+                                class="pa-2"
+                            >{{ message.text }}</span>
+                    </pre>
+                </div>
+                <div class="d-flex justify-end">
+                    <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                            <v-btn icon v-bind="attrs" v-on="on" @click="outputMessages = []">
+                                <v-icon>mdi-trash-can-outline</v-icon>
+                            </v-btn>
+                        </template>
+                        <span>Clear messages</span>
+                    </v-tooltip>
+                </div>
+            </v-sheet>
+        </v-menu> -->
+    </v-app>
+</script><style>.f2s1awa{align-items:center;display:flex;flex-direction:row}.f1235lqo{color:var(--jp-ui-font-color1);font-family:var(--jp-ui-font-family);font-size:var(--jp-ui-font-size1);line-height:24px}.f14byud0{align-items:center;background:var(--jp-layout-color2);display:flex;justify-content:space-between;min-height:var(--jp-statusbar-height);padding-left:10px;padding-right:10px}.fddsvlq{align-items:center;display:flex}.fy1visq{flex-direction:row}.f1fwtl1j{flex-direction:row-reverse}.fk1s8g9{color:var(--jp-ui-font-color1);height:var(--jp-statusbar-height);margin-left:2px;margin-right:2px;max-height:var(--jp-statusbar-height);padding-left:6px;padding-right:6px;text-overflow:ellipsis;white-space:nowrap}.f1rbgl4n{background-color:var(--jp-brand-color1)}.f1rbgl4n .f1235lqo{color:white}.fwgmxe9:hover{background-color:var(--jp-layout-color3)}.fzt5yh7{box-shadow:0px 4px 4px rgba(0, 0, 0, 0.25)}.f1mm715f{background-color:var(--jp-layout-color2);box-shadow:var(--jp-toolbar-box-shadow);font-size:var(--jp-ui-font-size1);padding:4px 12px;z-index:2}.f4ilvu8{color:var(--jp-ui-font-color0);font-size:var(--jp-ui-font-size0);line-height:var(--jp-ui-font-size1);margin-top:4px}.f1958oj{background-position:center;background-repeat:no-repeat;background-size:16px;border:none;border-radius:0px;height:24px;outline:none;padding:0px 12px;position:absolute;right:8px;top:4px;width:12px}.fb0mcj4{background-color:var(--jp-brand-color1);background-position:center;background-repeat:no-repeat;background-size:16px;border:none;border-radius:0px;box-sizing:border-box;height:100%;outline:none;padding:4px 6px;position:absolute;right:0px;top:0px;width:100%}.fya4nu5{background-color:transparent;background-position:center;background-repeat:no-repeat;background-size:16px;border:none;border-radius:0px;box-sizing:border-box;height:100%;outline:none;position:absolute;right:0px;top:0px;width:100%}.f123ynex{background-color:var(--jp-input-active-background);border:1px solid var(--jp-border-color0);height:22px;overflow:hidden;padding:0px 8px}.f1bwa14q{border:var(--jp-border-width) solid var(--md-blue-500);box-shadow:inset 0 0 4px var(--md-blue-300)}.f13uy5em{background:transparent;border:none;color:var(--jp-ui-font-color0);height:100%;line-height:28px;outline:none;width:200px}</style><style type="text/css" id="vuetify-theme-stylesheet">.v-application a { color: #ff991f; }
+.v-application .primary {
+  background-color: #ff991f !important;
+  border-color: #ff991f !important;
+}
+.v-application .primary--text {
+  color: #ff991f !important;
+  caret-color: #ff991f !important;
+}
+.v-application .primary.lighten-5 {
+  background-color: #ffffae !important;
+  border-color: #ffffae !important;
+}
+.v-application .primary--text.text--lighten-5 {
+  color: #ffffae !important;
+  caret-color: #ffffae !important;
+}
+.v-application .primary.lighten-4 {
+  background-color: #ffff92 !important;
+  border-color: #ffff92 !important;
+}
+.v-application .primary--text.text--lighten-4 {
+  color: #ffff92 !important;
+  caret-color: #ffff92 !important;
+}
+.v-application .primary.lighten-3 {
+  background-color: #ffec76 !important;
+  border-color: #ffec76 !important;
+}
+.v-application .primary--text.text--lighten-3 {
+  color: #ffec76 !important;
+  caret-color: #ffec76 !important;
+}
+.v-application .primary.lighten-2 {
+  background-color: #ffd05a !important;
+  border-color: #ffd05a !important;
+}
+.v-application .primary--text.text--lighten-2 {
+  color: #ffd05a !important;
+  caret-color: #ffd05a !important;
+}
+.v-application .primary.lighten-1 {
+  background-color: #ffb43e !important;
+  border-color: #ffb43e !important;
+}
+.v-application .primary--text.text--lighten-1 {
+  color: #ffb43e !important;
+  caret-color: #ffb43e !important;
+}
+.v-application .primary.darken-1 {
+  background-color: #df7f00 !important;
+  border-color: #df7f00 !important;
+}
+.v-application .primary--text.text--darken-1 {
+  color: #df7f00 !important;
+  caret-color: #df7f00 !important;
+}
+.v-application .primary.darken-2 {
+  background-color: #c06500 !important;
+  border-color: #c06500 !important;
+}
+.v-application .primary--text.text--darken-2 {
+  color: #c06500 !important;
+  caret-color: #c06500 !important;
+}
+.v-application .primary.darken-3 {
+  background-color: #a14d00 !important;
+  border-color: #a14d00 !important;
+}
+.v-application .primary--text.text--darken-3 {
+  color: #a14d00 !important;
+  caret-color: #a14d00 !important;
+}
+.v-application .primary.darken-4 {
+  background-color: #843400 !important;
+  border-color: #843400 !important;
+}
+.v-application .primary--text.text--darken-4 {
+  color: #843400 !important;
+  caret-color: #843400 !important;
+}
+.v-application .secondary {
+  background-color: #424242 !important;
+  border-color: #424242 !important;
+}
+.v-application .secondary--text {
+  color: #424242 !important;
+  caret-color: #424242 !important;
+}
+.v-application .secondary.lighten-5 {
+  background-color: #c1c1c1 !important;
+  border-color: #c1c1c1 !important;
+}
+.v-application .secondary--text.text--lighten-5 {
+  color: #c1c1c1 !important;
+  caret-color: #c1c1c1 !important;
+}
+.v-application .secondary.lighten-4 {
+  background-color: #a6a6a6 !important;
+  border-color: #a6a6a6 !important;
+}
+.v-application .secondary--text.text--lighten-4 {
+  color: #a6a6a6 !important;
+  caret-color: #a6a6a6 !important;
+}
+.v-application .secondary.lighten-3 {
+  background-color: #8b8b8b !important;
+  border-color: #8b8b8b !important;
+}
+.v-application .secondary--text.text--lighten-3 {
+  color: #8b8b8b !important;
+  caret-color: #8b8b8b !important;
+}
+.v-application .secondary.lighten-2 {
+  background-color: #727272 !important;
+  border-color: #727272 !important;
+}
+.v-application .secondary--text.text--lighten-2 {
+  color: #727272 !important;
+  caret-color: #727272 !important;
+}
+.v-application .secondary.lighten-1 {
+  background-color: #595959 !important;
+  border-color: #595959 !important;
+}
+.v-application .secondary--text.text--lighten-1 {
+  color: #595959 !important;
+  caret-color: #595959 !important;
+}
+.v-application .secondary.darken-1 {
+  background-color: #2c2c2c !important;
+  border-color: #2c2c2c !important;
+}
+.v-application .secondary--text.text--darken-1 {
+  color: #2c2c2c !important;
+  caret-color: #2c2c2c !important;
+}
+.v-application .secondary.darken-2 {
+  background-color: #171717 !important;
+  border-color: #171717 !important;
+}
+.v-application .secondary--text.text--darken-2 {
+  color: #171717 !important;
+  caret-color: #171717 !important;
+}
+.v-application .secondary.darken-3 {
+  background-color: #000000 !important;
+  border-color: #000000 !important;
+}
+.v-application .secondary--text.text--darken-3 {
+  color: #000000 !important;
+  caret-color: #000000 !important;
+}
+.v-application .secondary.darken-4 {
+  background-color: #000000 !important;
+  border-color: #000000 !important;
+}
+.v-application .secondary--text.text--darken-4 {
+  color: #000000 !important;
+  caret-color: #000000 !important;
+}
+.v-application .accent {
+  background-color: #82b1ff !important;
+  border-color: #82b1ff !important;
+}
+.v-application .accent--text {
+  color: #82b1ff !important;
+  caret-color: #82b1ff !important;
+}
+.v-application .accent.lighten-5 {
+  background-color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+.v-application .accent--text.text--lighten-5 {
+  color: #ffffff !important;
+  caret-color: #ffffff !important;
+}
+.v-application .accent.lighten-4 {
+  background-color: #f8ffff !important;
+  border-color: #f8ffff !important;
+}
+.v-application .accent--text.text--lighten-4 {
+  color: #f8ffff !important;
+  caret-color: #f8ffff !important;
+}
+.v-application .accent.lighten-3 {
+  background-color: #daffff !important;
+  border-color: #daffff !important;
+}
+.v-application .accent--text.text--lighten-3 {
+  color: #daffff !important;
+  caret-color: #daffff !important;
+}
+.v-application .accent.lighten-2 {
+  background-color: #bce8ff !important;
+  border-color: #bce8ff !important;
+}
+.v-application .accent--text.text--lighten-2 {
+  color: #bce8ff !important;
+  caret-color: #bce8ff !important;
+}
+.v-application .accent.lighten-1 {
+  background-color: #9fccff !important;
+  border-color: #9fccff !important;
+}
+.v-application .accent--text.text--lighten-1 {
+  color: #9fccff !important;
+  caret-color: #9fccff !important;
+}
+.v-application .accent.darken-1 {
+  background-color: #6596e2 !important;
+  border-color: #6596e2 !important;
+}
+.v-application .accent--text.text--darken-1 {
+  color: #6596e2 !important;
+  caret-color: #6596e2 !important;
+}
+.v-application .accent.darken-2 {
+  background-color: #467dc6 !important;
+  border-color: #467dc6 !important;
+}
+.v-application .accent--text.text--darken-2 {
+  color: #467dc6 !important;
+  caret-color: #467dc6 !important;
+}
+.v-application .accent.darken-3 {
+  background-color: #2364aa !important;
+  border-color: #2364aa !important;
+}
+.v-application .accent--text.text--darken-3 {
+  color: #2364aa !important;
+  caret-color: #2364aa !important;
+}
+.v-application .accent.darken-4 {
+  background-color: #004c90 !important;
+  border-color: #004c90 !important;
+}
+.v-application .accent--text.text--darken-4 {
+  color: #004c90 !important;
+  caret-color: #004c90 !important;
+}
+.v-application .error {
+  background-color: #ff5252 !important;
+  border-color: #ff5252 !important;
+}
+.v-application .error--text {
+  color: #ff5252 !important;
+  caret-color: #ff5252 !important;
+}
+.v-application .error.lighten-5 {
+  background-color: #ffe4d5 !important;
+  border-color: #ffe4d5 !important;
+}
+.v-application .error--text.text--lighten-5 {
+  color: #ffe4d5 !important;
+  caret-color: #ffe4d5 !important;
+}
+.v-application .error.lighten-4 {
+  background-color: #ffc6b9 !important;
+  border-color: #ffc6b9 !important;
+}
+.v-application .error--text.text--lighten-4 {
+  color: #ffc6b9 !important;
+  caret-color: #ffc6b9 !important;
+}
+.v-application .error.lighten-3 {
+  background-color: #ffa99e !important;
+  border-color: #ffa99e !important;
+}
+.v-application .error--text.text--lighten-3 {
+  color: #ffa99e !important;
+  caret-color: #ffa99e !important;
+}
+.v-application .error.lighten-2 {
+  background-color: #ff8c84 !important;
+  border-color: #ff8c84 !important;
+}
+.v-application .error--text.text--lighten-2 {
+  color: #ff8c84 !important;
+  caret-color: #ff8c84 !important;
+}
+.v-application .error.lighten-1 {
+  background-color: #ff6f6a !important;
+  border-color: #ff6f6a !important;
+}
+.v-application .error--text.text--lighten-1 {
+  color: #ff6f6a !important;
+  caret-color: #ff6f6a !important;
+}
+.v-application .error.darken-1 {
+  background-color: #df323b !important;
+  border-color: #df323b !important;
+}
+.v-application .error--text.text--darken-1 {
+  color: #df323b !important;
+  caret-color: #df323b !important;
+}
+.v-application .error.darken-2 {
+  background-color: #bf0025 !important;
+  border-color: #bf0025 !important;
+}
+.v-application .error--text.text--darken-2 {
+  color: #bf0025 !important;
+  caret-color: #bf0025 !important;
+}
+.v-application .error.darken-3 {
+  background-color: #9f0010 !important;
+  border-color: #9f0010 !important;
+}
+.v-application .error--text.text--darken-3 {
+  color: #9f0010 !important;
+  caret-color: #9f0010 !important;
+}
+.v-application .error.darken-4 {
+  background-color: #800000 !important;
+  border-color: #800000 !important;
+}
+.v-application .error--text.text--darken-4 {
+  color: #800000 !important;
+  caret-color: #800000 !important;
+}
+.v-application .info {
+  background-color: #2196f3 !important;
+  border-color: #2196f3 !important;
+}
+.v-application .info--text {
+  color: #2196f3 !important;
+  caret-color: #2196f3 !important;
+}
+.v-application .info.lighten-5 {
+  background-color: #d4ffff !important;
+  border-color: #d4ffff !important;
+}
+.v-application .info--text.text--lighten-5 {
+  color: #d4ffff !important;
+  caret-color: #d4ffff !important;
+}
+.v-application .info.lighten-4 {
+  background-color: #b5ffff !important;
+  border-color: #b5ffff !important;
+}
+.v-application .info--text.text--lighten-4 {
+  color: #b5ffff !important;
+  caret-color: #b5ffff !important;
+}
+.v-application .info.lighten-3 {
+  background-color: #95e8ff !important;
+  border-color: #95e8ff !important;
+}
+.v-application .info--text.text--lighten-3 {
+  color: #95e8ff !important;
+  caret-color: #95e8ff !important;
+}
+.v-application .info.lighten-2 {
+  background-color: #75ccff !important;
+  border-color: #75ccff !important;
+}
+.v-application .info--text.text--lighten-2 {
+  color: #75ccff !important;
+  caret-color: #75ccff !important;
+}
+.v-application .info.lighten-1 {
+  background-color: #51b0ff !important;
+  border-color: #51b0ff !important;
+}
+.v-application .info--text.text--lighten-1 {
+  color: #51b0ff !important;
+  caret-color: #51b0ff !important;
+}
+.v-application .info.darken-1 {
+  background-color: #007cd6 !important;
+  border-color: #007cd6 !important;
+}
+.v-application .info--text.text--darken-1 {
+  color: #007cd6 !important;
+  caret-color: #007cd6 !important;
+}
+.v-application .info.darken-2 {
+  background-color: #0064ba !important;
+  border-color: #0064ba !important;
+}
+.v-application .info--text.text--darken-2 {
+  color: #0064ba !important;
+  caret-color: #0064ba !important;
+}
+.v-application .info.darken-3 {
+  background-color: #004d9f !important;
+  border-color: #004d9f !important;
+}
+.v-application .info--text.text--darken-3 {
+  color: #004d9f !important;
+  caret-color: #004d9f !important;
+}
+.v-application .info.darken-4 {
+  background-color: #003784 !important;
+  border-color: #003784 !important;
+}
+.v-application .info--text.text--darken-4 {
+  color: #003784 !important;
+  caret-color: #003784 !important;
+}
+.v-application .success {
+  background-color: #4caf50 !important;
+  border-color: #4caf50 !important;
+}
+.v-application .success--text {
+  color: #4caf50 !important;
+  caret-color: #4caf50 !important;
+}
+.v-application .success.lighten-5 {
+  background-color: #dcffd6 !important;
+  border-color: #dcffd6 !important;
+}
+.v-application .success--text.text--lighten-5 {
+  color: #dcffd6 !important;
+  caret-color: #dcffd6 !important;
+}
+.v-application .success.lighten-4 {
+  background-color: #beffba !important;
+  border-color: #beffba !important;
+}
+.v-application .success--text.text--lighten-4 {
+  color: #beffba !important;
+  caret-color: #beffba !important;
+}
+.v-application .success.lighten-3 {
+  background-color: #a2ff9e !important;
+  border-color: #a2ff9e !important;
+}
+.v-application .success--text.text--lighten-3 {
+  color: #a2ff9e !important;
+  caret-color: #a2ff9e !important;
+}
+.v-application .success.lighten-2 {
+  background-color: #85e783 !important;
+  border-color: #85e783 !important;
+}
+.v-application .success--text.text--lighten-2 {
+  color: #85e783 !important;
+  caret-color: #85e783 !important;
+}
+.v-application .success.lighten-1 {
+  background-color: #69cb69 !important;
+  border-color: #69cb69 !important;
+}
+.v-application .success--text.text--lighten-1 {
+  color: #69cb69 !important;
+  caret-color: #69cb69 !important;
+}
+.v-application .success.darken-1 {
+  background-color: #2d9437 !important;
+  border-color: #2d9437 !important;
+}
+.v-application .success--text.text--darken-1 {
+  color: #2d9437 !important;
+  caret-color: #2d9437 !important;
+}
+.v-application .success.darken-2 {
+  background-color: #00791e !important;
+  border-color: #00791e !important;
+}
+.v-application .success--text.text--darken-2 {
+  color: #00791e !important;
+  caret-color: #00791e !important;
+}
+.v-application .success.darken-3 {
+  background-color: #006000 !important;
+  border-color: #006000 !important;
+}
+.v-application .success--text.text--darken-3 {
+  color: #006000 !important;
+  caret-color: #006000 !important;
+}
+.v-application .success.darken-4 {
+  background-color: #004700 !important;
+  border-color: #004700 !important;
+}
+.v-application .success--text.text--darken-4 {
+  color: #004700 !important;
+  caret-color: #004700 !important;
+}
+.v-application .warning {
+  background-color: #fb8c00 !important;
+  border-color: #fb8c00 !important;
+}
+.v-application .warning--text {
+  color: #fb8c00 !important;
+  caret-color: #fb8c00 !important;
+}
+.v-application .warning.lighten-5 {
+  background-color: #ffff9e !important;
+  border-color: #ffff9e !important;
+}
+.v-application .warning--text.text--lighten-5 {
+  color: #ffff9e !important;
+  caret-color: #ffff9e !important;
+}
+.v-application .warning.lighten-4 {
+  background-color: #fffb82 !important;
+  border-color: #fffb82 !important;
+}
+.v-application .warning--text.text--lighten-4 {
+  color: #fffb82 !important;
+  caret-color: #fffb82 !important;
+}
+.v-application .warning.lighten-3 {
+  background-color: #ffdf67 !important;
+  border-color: #ffdf67 !important;
+}
+.v-application .warning--text.text--lighten-3 {
+  color: #ffdf67 !important;
+  caret-color: #ffdf67 !important;
+}
+.v-application .warning.lighten-2 {
+  background-color: #ffc24b !important;
+  border-color: #ffc24b !important;
+}
+.v-application .warning--text.text--lighten-2 {
+  color: #ffc24b !important;
+  caret-color: #ffc24b !important;
+}
+.v-application .warning.lighten-1 {
+  background-color: #ffa72d !important;
+  border-color: #ffa72d !important;
+}
+.v-application .warning--text.text--lighten-1 {
+  color: #ffa72d !important;
+  caret-color: #ffa72d !important;
+}
+.v-application .warning.darken-1 {
+  background-color: #db7200 !important;
+  border-color: #db7200 !important;
+}
+.v-application .warning--text.text--darken-1 {
+  color: #db7200 !important;
+  caret-color: #db7200 !important;
+}
+.v-application .warning.darken-2 {
+  background-color: #bb5900 !important;
+  border-color: #bb5900 !important;
+}
+.v-application .warning--text.text--darken-2 {
+  color: #bb5900 !important;
+  caret-color: #bb5900 !important;
+}
+.v-application .warning.darken-3 {
+  background-color: #9d4000 !important;
+  border-color: #9d4000 !important;
+}
+.v-application .warning--text.text--darken-3 {
+  color: #9d4000 !important;
+  caret-color: #9d4000 !important;
+}
+.v-application .warning.darken-4 {
+  background-color: #802700 !important;
+  border-color: #802700 !important;
+}
+.v-application .warning--text.text--darken-4 {
+  color: #802700 !important;
+  caret-color: #802700 !important;
+}</style><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="/static/nbextensions/jupyter-leaflet/extension.js" src="/static/nbextensions/jupyter-leaflet/extension.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="/static/nbextensions/ipycanvas/extension.js" src="/static/nbextensions/ipycanvas/extension.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="/static/nbextensions/jupyterlab-plotly/extension.js" src="/static/nbextensions/jupyterlab-plotly/extension.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="/static/nbextensions/bqplot/extension.js" src="/static/nbextensions/bqplot/extension.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="nbextensions/jupyter-vuetify/nodeps" src="/static/nbextensions/jupyter-vuetify/nodeps.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="nbextensions/jupyter-vue/nodeps" src="/static/nbextensions/jupyter-vue/nodeps.js"></script><style type="text/css">html {
+  /* font sizes in vuetify are in rem units. To get the correct font size, the html tag has to have a font size of 
+     * 16px */
+  font-size: 16px;
+}
+
+.vuetify-styles div.v-application--wrap {
+  /* disable min-height: 100vh set by vuetify */
+  min-height: unset;
+}
+
+.vuetify-styles {
+  /* Rules set on the html element in the vuetify styles are no longer applied after prefixing all selectors, so copy
+     * them here. */
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+
+  /* From _reset.scss */
+  box-sizing: border-box;
+}
+</style><style id="MJX-CHTML-styles">
+mjx-container[jax="CHTML"] {
+  line-height: 0;
+}
+
+mjx-container [space="1"] {
+  margin-left: .111em;
+}
+
+mjx-container [space="2"] {
+  margin-left: .167em;
+}
+
+mjx-container [space="3"] {
+  margin-left: .222em;
+}
+
+mjx-container [space="4"] {
+  margin-left: .278em;
+}
+
+mjx-container [space="5"] {
+  margin-left: .333em;
+}
+
+mjx-container [rspace="1"] {
+  margin-right: .111em;
+}
+
+mjx-container [rspace="2"] {
+  margin-right: .167em;
+}
+
+mjx-container [rspace="3"] {
+  margin-right: .222em;
+}
+
+mjx-container [rspace="4"] {
+  margin-right: .278em;
+}
+
+mjx-container [rspace="5"] {
+  margin-right: .333em;
+}
+
+mjx-container [size="s"] {
+  font-size: 70.7%;
+}
+
+mjx-container [size="ss"] {
+  font-size: 50%;
+}
+
+mjx-container [size="Tn"] {
+  font-size: 60%;
+}
+
+mjx-container [size="sm"] {
+  font-size: 85%;
+}
+
+mjx-container [size="lg"] {
+  font-size: 120%;
+}
+
+mjx-container [size="Lg"] {
+  font-size: 144%;
+}
+
+mjx-container [size="LG"] {
+  font-size: 173%;
+}
+
+mjx-container [size="hg"] {
+  font-size: 207%;
+}
+
+mjx-container [size="HG"] {
+  font-size: 249%;
+}
+
+mjx-container [width="full"] {
+  width: 100%;
+}
+
+mjx-box {
+  display: inline-block;
+}
+
+mjx-block {
+  display: block;
+}
+
+mjx-itable {
+  display: inline-table;
+}
+
+mjx-row {
+  display: table-row;
+}
+
+mjx-row > * {
+  display: table-cell;
+}
+
+mjx-mtext {
+  display: inline-block;
+}
+
+mjx-mstyle {
+  display: inline-block;
+}
+
+mjx-merror {
+  display: inline-block;
+  color: red;
+  background-color: yellow;
+}
+
+mjx-mphantom {
+  visibility: hidden;
+}
+
+_::-webkit-full-page-media, _:future, :root mjx-container {
+  will-change: opacity;
+}
+
+mjx-c::before {
+  display: block;
+  width: 0;
+}
+
+.MJX-TEX {
+  font-family: MJXZERO, MJXTEX;
+}
+
+.TEX-B {
+  font-family: MJXZERO, MJXTEX-B;
+}
+
+.TEX-I {
+  font-family: MJXZERO, MJXTEX-I;
+}
+
+.TEX-MI {
+  font-family: MJXZERO, MJXTEX-MI;
+}
+
+.TEX-BI {
+  font-family: MJXZERO, MJXTEX-BI;
+}
+
+.TEX-S1 {
+  font-family: MJXZERO, MJXTEX-S1;
+}
+
+.TEX-S2 {
+  font-family: MJXZERO, MJXTEX-S2;
+}
+
+.TEX-S3 {
+  font-family: MJXZERO, MJXTEX-S3;
+}
+
+.TEX-S4 {
+  font-family: MJXZERO, MJXTEX-S4;
+}
+
+.TEX-A {
+  font-family: MJXZERO, MJXTEX-A;
+}
+
+.TEX-C {
+  font-family: MJXZERO, MJXTEX-C;
+}
+
+.TEX-CB {
+  font-family: MJXZERO, MJXTEX-CB;
+}
+
+.TEX-FR {
+  font-family: MJXZERO, MJXTEX-FR;
+}
+
+.TEX-FRB {
+  font-family: MJXZERO, MJXTEX-FRB;
+}
+
+.TEX-SS {
+  font-family: MJXZERO, MJXTEX-SS;
+}
+
+.TEX-SSB {
+  font-family: MJXZERO, MJXTEX-SSB;
+}
+
+.TEX-SSI {
+  font-family: MJXZERO, MJXTEX-SSI;
+}
+
+.TEX-SC {
+  font-family: MJXZERO, MJXTEX-SC;
+}
+
+.TEX-T {
+  font-family: MJXZERO, MJXTEX-T;
+}
+
+.TEX-V {
+  font-family: MJXZERO, MJXTEX-V;
+}
+
+.TEX-VB {
+  font-family: MJXZERO, MJXTEX-VB;
+}
+
+mjx-stretchy-v mjx-c, mjx-stretchy-h mjx-c {
+  font-family: MJXZERO, MJXTEX-S1, MJXTEX-S4, MJXTEX, MJXTEX-A ! important;
+}
+</style><style id="ipyvue-algolia">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.DocSearch-Button {
+    background-color: rgb(255, 238, 197);
+    color: #182026;
+}
+
+.DocSearch-Button:hover {
+    background-color: rgb(255, 247, 227);
+}
+</style><meta name="twitter:card" content="summary_large_image" data-solara-head-key="meta--twitter:card"><meta name="twitter:site" content="@solara_dev" data-solara-head-key="meta--twitter:site"><meta name="twitter:image" content="https://solara.dev/static/assets/images/logo-small.png" data-solara-head-key="meta--twitter:image"><meta property="og:url" content="https://solara.dev/docs/understanding/reacton-basics" data-solara-head-key="meta--og:url"><meta property="og:image" content="https://solara.dev/static/assets/images/logo-small.png" data-solara-head-key="meta--og:image"><meta property="og:type" content="website" data-solara-head-key="meta--og:type"></head>
+
+<body data-base-url="/static/">
+    
+    <div data-app="true" class="v-application v-application--is-ltr theme--light" id="app"><div class="v-application--wrap"><div role="progressbar" aria-valuemin="0" aria-valuemax="100" class="v-progress-linear v-progress-linear--absolute theme--light" style="height: 4px; visibility: hidden;"><div class="v-progress-linear__background primary" style="opacity: 0.3; left: 0%; width: 100%;"></div><div class="v-progress-linear__buffer"></div><div class="v-progress-linear__indeterminate v-progress-linear__indeterminate--active"><div class="v-progress-linear__indeterminate long primary"></div><div class="v-progress-linear__indeterminate short primary"></div></div></div> <!----> <div><div tag="div"><div class="v-sheet theme--light elevation-0 d-flex" style="flex-direction: column; align-items: stretch; flex-grow: 1;"><span></span><div class="v-sheet theme--light elevation-0 d-flex" style="flex-direction: column; align-items: stretch;"><span style="display: none;">Solara documentation</span><span></span><span></span><span></span><span></span><span></span><span></span><header class="v-sheet v-sheet--tile theme--light v-toolbar v-toolbar--flat v-app-bar bg-primary-fade padding-40" style="margin-top: 0px; transform: translateY(0px); left: 0px; right: 0px;" data-booted="true"><div class="v-toolbar__content"><div class="v-toolbar__title d-flex" style="align-items: center;"><button type="button" class="v-btn v-btn--flat v-btn--icon v-btn--round theme--light v-size--default hidden-md-and-up"><span class="v-btn__content"><i aria-hidden="true" class="v-icon notranslate mdi mdi-menu theme--light"></i></span></button><a tag="a" href="/"><div style="height: 100%;"><img class="lm-Widget p-Widget jupyter-widgets widget-image solara-image" src="/static/assets/images/logo.svg"></div></a></div><div class="spacer"></div><div id="docsearch"><button type="button" class="DocSearch DocSearch-Button" aria-label="Search"><span class="DocSearch-Button-Container"><svg width="20" height="20" class="DocSearch-Search-Icon" viewBox="0 0 20 20"><path d="M14.386 14.386l4.0877 4.0877-4.0877-4.0877c-2.9418 2.9419-7.7115 2.9419-10.6533 0-2.9419-2.9418-2.9419-7.7115 0-10.6533 2.9418-2.9419 7.7115-2.9419 10.6533 0 2.9419 2.9418 2.9419 7.7115 0 10.6533z" stroke="currentColor" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="DocSearch-Button-Placeholder">Search</span></span><span class="DocSearch-Button-Keys"><kbd class="DocSearch-Button-Key"><svg width="15" height="15" class="DocSearch-Control-Key-Icon"><path d="M4.505 4.496h2M5.505 5.496v5M8.216 4.496l.055 5.993M10 7.5c.333.333.5.667.5 1v2M12.326 4.5v5.996M8.384 4.496c1.674 0 2.116 0 2.116 1.5s-.442 1.5-2.116 1.5M3.205 9.303c-.09.448-.277 1.21-1.241 1.203C1 10.5.5 9.513.5 8V7c0-1.57.5-2.5 1.464-2.494.964.006 1.134.598 1.24 1.342M12.553 10.5h1.953" stroke-width="1.2" stroke="currentColor" fill="none" stroke-linecap="square"></path></svg></kbd><kbd class="DocSearch-Button-Key">K</kbd></span></button></div><ul tag="ul" class="main-menu menu d-none d-md-flex"><li tag="li"><a tag="a" href="/">Home</a></li><li tag="li"><a tag="a" href="/showcase">Showcase</a></li><li tag="li" class="active"><a tag="a" href="/docs">Docs</a></li><li tag="li"><a tag="a" href="/api">API</a></li><li tag="li"><a tag="a" href="/examples">Examples</a></li></ul><a href="https://github.com/widgetti/solara" target="_blank" class="v-btn v-btn--flat v-btn--icon v-btn--round theme--light v-size--default d-none d-md-flex"><span class="v-btn__content"><i aria-hidden="true" class="v-icon notranslate mdi mdi-github-circle theme--light"></i></span></a><a href="https://discord.gg/dm4GKNDjXN" target="_blank" class="v-btn v-btn--flat v-btn--icon v-btn--round theme--light v-size--default d-none d-md-flex"><span class="v-btn__content"><i aria-hidden="true" class="v-icon notranslate mdi mdi-discord theme--light"></i></span></a><button type="button" class="v-btn v-btn--flat v-btn--icon v-btn--round theme--light v-size--default hidden-md-and-up"><span class="v-btn__content"><i aria-hidden="true" class="v-icon notranslate mdi mdi-menu theme--light"></i></span></button></div></header><section class="container container--fluid ma-0 pa-0 fill-height mb-8 solara-content-main"><div class="row justify-start" style="gap: 6rem; flex-wrap: nowrap;"><aside class="col-md-4 col-lg-3 col sidebar bg-grey d-none d-md-block"><ul tag="ul"><a tag="a" href="/docs"><li tag="li">Introduction</li></a><a tag="a" href="/docs/installing"><li tag="li">Installing</li></a><a tag="a" href="/docs/quickstart"><li tag="li">Quickstart</li></a><a tag="a" href="/docs/tutorial"><li tag="li">Tutorial<ul tag="ul"><a tag="a" href="/docs/tutorial/data-science"><li tag="li">Data Science</li></a><a tag="a" href="/docs/tutorial/web-app"><li tag="li">Web App</li></a><a tag="a" href="/docs/tutorial/ipywidgets"><li tag="li">Ipywidgets</li></a><a tag="a" href="/docs/tutorial/streamlit"><li tag="li">Streamlit</li></a><a tag="a" href="/docs/tutorial/dash"><li tag="li">Dash</li></a></ul></li></a><a tag="a" href="/docs/fundamentals"><li tag="li">Fundamentals<ul tag="ul"><a tag="a" href="/docs/fundamentals/components"><li tag="li">Components</li></a><a tag="a" href="/docs/fundamentals/state-management"><li tag="li">State Management</li></a></ul></li></a><a tag="a" href="/docs/howto"><li tag="li">Howto<ul tag="ul"><a tag="a" href="/docs/howto/contribute"><li tag="li">Contribute</li></a><a tag="a" href="/docs/howto/multipage"><li tag="li">Multipage</li></a><a tag="a" href="/docs/howto/layout"><li tag="li">Layout</li></a><a tag="a" href="/docs/howto/testing"><li tag="li">Testing</li></a><a tag="a" href="/docs/howto/embed"><li tag="li">Embed</li></a><a tag="a" href="/docs/howto/ipywidget-libraries"><li tag="li">Ipywidget Libraries</li></a></ul></li></a><a tag="a" href="/docs/reference"><li tag="li">Reference<ul tag="ul"><a tag="a" href="/docs/reference/static-files"><li tag="li">Static Files</li></a><a tag="a" href="/docs/reference/asset-files"><li tag="li">Asset Files</li></a><a tag="a" href="/docs/reference/static-site-generation"><li tag="li">Static Site Generation</li></a><a tag="a" href="/docs/reference/search"><li tag="li">Search</li></a><a tag="a" href="/docs/reference/reloading"><li tag="li">Reloading</li></a><a tag="a" href="/docs/reference/notebook-support"><li tag="li">Notebook Support</li></a><a tag="a" href="/docs/reference/caching"><li tag="li">Caching</li></a></ul></li></a><a tag="a" href="/docs/understanding"><li tag="li">Understanding<ul tag="ul"><a tag="a" href="/docs/understanding/ipywidgets"><li tag="li">Ipywidgets</li></a><a tag="a" href="/docs/understanding/ipyvuetify"><li tag="li">Ipyvuetify</li></a><a tag="a" href="/docs/understanding/reacton"><li tag="li">Reacton</li></a><a tag="a" href="/docs/understanding/reacton-basics"><li tag="li" class="active">Reacton Basics</li></a><a tag="a" href="/docs/understanding/anatomy"><li tag="li">Anatomy</li></a><a tag="a" href="/docs/understanding/rules-of-hooks"><li tag="li">Rules Of Hooks</li></a><a tag="a" href="/docs/understanding/containers"><li tag="li">Containers</li></a><a tag="a" href="/docs/understanding/solara"><li tag="li">Solara</li></a><a tag="a" href="/docs/understanding/routing"><li tag="li">Routing</li></a><a tag="a" href="/docs/understanding/solara-server"><li tag="li">Solara Server</li></a><a tag="a" href="/docs/understanding/voila"><li tag="li">Voila</li></a></ul></li></a><a tag="a" href="/docs/deploying"><li tag="li">Deploying<ul tag="ul"><a tag="a" href="/docs/deploying/self-hosted"><li tag="li">Self Hosted</li></a><a tag="a" href="/docs/deploying/cloud-hosted"><li tag="li">Cloud Hosted</li></a></ul></li></a><a tag="a" href="/docs/enterprise"><li tag="li">Enterprise<ul tag="ul"><a tag="a" href="/docs/enterprise/oauth"><li tag="li">Oauth</li></a></ul></li></a><a tag="a" href="/docs/development"><li tag="li">Development<ul tag="ul"></ul></li></a><a tag="a" href="/docs/troubleshoot"><li tag="li">Troubleshoot</li></a><a tag="a" href="/docs/contact"><li tag="li">Contact</li></a><a tag="a" href="/docs/faq"><li tag="li">Faq</li></a><a tag="a" href="/docs/lab"><li tag="li">Lab<ul tag="ul"></ul></li></a></ul></aside><main class="col-md col pt-12 pl-12 pr-10" style="max-width: 1024px; overflow: auto;"><div class="row solara-page-content-search"><div tag="div" class="solara-autorouter-content"><span style="display: none;">Reacton Basics</span><div tag="div" style="position: relative;"><a href="https://github.com/widgetti/solara/edit/master/solara/website/pages/docs/content/20-understanding/12-reacton-basics.md" target="_blank" class="v-btn v-btn--flat v-btn--icon v-btn--round theme--light v-size--default" style="position: absolute; top: 0px; right: 0px;"><span class="v-btn__content"><i aria-hidden="true" class="v-icon notranslate mdi mdi-pencil theme--light"></i></span></a><span class="v-tooltip v-tooltip--bottom"><!----></span><div class="solara-markdown rendered_html jp-RenderedHTMLCommon"><h1 id="reacton-basic-understanding">Reacton basic understanding</h1> <p>Let us take our favorite component, and try to understand a bit better how it works to improve your understanding of Reacton and thus how to use Solara.</p> <div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">solara</span>
+
+
+<span class="nd">@solara</span><span class="o">.</span><span class="n">component</span>
+<span class="k">def</span> <span class="nf">ClickButton</span><span class="p">():</span>
+    <span class="n">clicks</span><span class="p">,</span> <span class="n">set_clicks</span> <span class="o">=</span> <span class="n">solara</span><span class="o">.</span><span class="n">use_state</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">my_click_hander</span><span class="p">():</span>
+        <span class="n">set_clicks</span><span class="p">(</span><span class="n">clicks</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">solara</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Clicked: </span><span class="si">{</span><span class="n">clicks</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">my_click_hander</span><span class="p">)</span>
+
+<span class="n">Page</span> <span class="o">=</span> <span class="n">ClickButton</span>
+</pre></div> <div class="solara-markdown-output v-card v-sheet elevation-7"><div tag="div"><button type="button" class="v-btn v-btn--contained theme--light v-size--default"><span class="v-btn__content">Clicked: 0</span></button></div><div class="v-messages">Live output</div></div> <p>This example does a few things:</p> <ul><li>Add state (<code>clicks</code>) to the component.</li> <li>Create a callback function (<code>my_click_handler</code>). When executed, it will increase ask Solara/Reacton to increase the <code>clicks</code> value on the next render, by calling <code>set_clicks</code>.</li> <li>Pass the callback function to the child component (<code>Button</code>).</li> <li>Set the <code>label</code> value on each render.</li></ul> <p>Now if a user clicks the button:</p> <ul><li>The <code>my_click_hander</code> callback will be called by Solara/Reacton.</li> <li>Your code (the body of <code>my_click_hander</code>) will be executed and will ask Reacton to change the state of <code>clicks</code> by increasing the value by 1.</li> <li>Solara/Reacton got asked to change the of <code>clicks</code>, and will execute your render function (the body of the <code>ClickButton</code> component) once.</li> <li>Solara/Reacton will compare the return value of your component and will update the associated widget. In this case it will update the label to <code>"</code>Clicked: 1"`.</li></ul> <p>This pattern is very common, where a parent component (ClickButton) managed the state (the number of times clicked), and state changes (increasing the clicks by 1 on a button click).</p> <h2 id="graphically">Graphically</h2> <p>Is the above text a bit dry? Maybe the annotated code will make it easier to understand for you.</p> <p><img alt="basics" src="/static/public/docs/reacton-basics.png"></p> <h2 id="going-deeper">Going deeper</h2> <p>Still not satisfied? Let's go through all the steps in more detail in this sequence diagram:</p> <div class="mermaid" data-processed="true"><svg aria-labelledby="chart-title-mermaid-1690656065142 chart-desc-mermaid-1690656065142" role="img" viewBox="-50 -10 1322 1027" style="max-width: 1322px;" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="100%" id="mermaid-1690656065142"><title id="chart-title-mermaid-1690656065142"></title><desc id="chart-desc-mermaid-1690656065142"></desc><style>#mermaid-1690656065142 {font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}#mermaid-1690656065142 .error-icon{fill:#552222;}#mermaid-1690656065142 .error-text{fill:#552222;stroke:#552222;}#mermaid-1690656065142 .edge-thickness-normal{stroke-width:2px;}#mermaid-1690656065142 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1690656065142 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1690656065142 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1690656065142 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1690656065142 .marker{fill:#333333;stroke:#333333;}#mermaid-1690656065142 .marker.cross{stroke:#333333;}#mermaid-1690656065142 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-1690656065142 .actor{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;}#mermaid-1690656065142 text.actor&gt;tspan{fill:black;stroke:none;}#mermaid-1690656065142 .actor-line{stroke:grey;}#mermaid-1690656065142 .messageLine0{stroke-width:1.5;stroke-dasharray:none;stroke:#333;}#mermaid-1690656065142 .messageLine1{stroke-width:1.5;stroke-dasharray:2,2;stroke:#333;}#mermaid-1690656065142 #arrowhead path{fill:#333;stroke:#333;}#mermaid-1690656065142 .sequenceNumber{fill:white;}#mermaid-1690656065142 #sequencenumber{fill:#333;}#mermaid-1690656065142 #crosshead path{fill:#333;stroke:#333;}#mermaid-1690656065142 .messageText{fill:#333;stroke:none;}#mermaid-1690656065142 .labelBox{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;}#mermaid-1690656065142 .labelText,#mermaid-1690656065142 .labelText&gt;tspan{fill:black;stroke:none;}#mermaid-1690656065142 .loopText,#mermaid-1690656065142 .loopText&gt;tspan{fill:black;stroke:none;}#mermaid-1690656065142 .loopLine{stroke-width:2px;stroke-dasharray:2,2;stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);}#mermaid-1690656065142 .note{stroke:#aaaa33;fill:#fff5ad;}#mermaid-1690656065142 .noteText,#mermaid-1690656065142 .noteText&gt;tspan{fill:black;stroke:none;}#mermaid-1690656065142 .activation0{fill:#f4f4f4;stroke:#666;}#mermaid-1690656065142 .activation1{fill:#f4f4f4;stroke:#666;}#mermaid-1690656065142 .activation2{fill:#f4f4f4;stroke:#666;}#mermaid-1690656065142 .actorPopupMenu{position:absolute;}#mermaid-1690656065142 .actorPopupMenuPanel{position:absolute;fill:#ECECFF;box-shadow:0px 8px 16px 0px rgba(0,0,0,0.2);filter:drop-shadow(3px 5px 2px rgb(0 0 0 / 0.4));}#mermaid-1690656065142 .actor-man line{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;}#mermaid-1690656065142 .actor-man circle,#mermaid-1690656065142 line{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;stroke-width:2px;}#mermaid-1690656065142 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g></g><defs><symbol height="24" width="24" id="computer"><path d="M2 2v13h20v-13h-20zm18 11h-16v-9h16v9zm-10.228 6l.466-1h3.524l.467 1h-4.457zm14.228 3h-24l2-6h2.104l-1.33 4h18.45l-1.297-4h2.073l2 6zm-5-10h-14v-7h14v7z" transform="scale(.5)"></path></symbol></defs><defs><symbol clip-rule="evenodd" fill-rule="evenodd" id="database"><path d="M12.258.001l.256.004.255.005.253.008.251.01.249.012.247.015.246.016.242.019.241.02.239.023.236.024.233.027.231.028.229.031.225.032.223.034.22.036.217.038.214.04.211.041.208.043.205.045.201.046.198.048.194.05.191.051.187.053.183.054.18.056.175.057.172.059.168.06.163.061.16.063.155.064.15.066.074.033.073.033.071.034.07.034.069.035.068.035.067.035.066.035.064.036.064.036.062.036.06.036.06.037.058.037.058.037.055.038.055.038.053.038.052.038.051.039.05.039.048.039.047.039.045.04.044.04.043.04.041.04.04.041.039.041.037.041.036.041.034.041.033.042.032.042.03.042.029.042.027.042.026.043.024.043.023.043.021.043.02.043.018.044.017.043.015.044.013.044.012.044.011.045.009.044.007.045.006.045.004.045.002.045.001.045v17l-.001.045-.002.045-.004.045-.006.045-.007.045-.009.044-.011.045-.012.044-.013.044-.015.044-.017.043-.018.044-.02.043-.021.043-.023.043-.024.043-.026.043-.027.042-.029.042-.03.042-.032.042-.033.042-.034.041-.036.041-.037.041-.039.041-.04.041-.041.04-.043.04-.044.04-.045.04-.047.039-.048.039-.05.039-.051.039-.052.038-.053.038-.055.038-.055.038-.058.037-.058.037-.06.037-.06.036-.062.036-.064.036-.064.036-.066.035-.067.035-.068.035-.069.035-.07.034-.071.034-.073.033-.074.033-.15.066-.155.064-.16.063-.163.061-.168.06-.172.059-.175.057-.18.056-.183.054-.187.053-.191.051-.194.05-.198.048-.201.046-.205.045-.208.043-.211.041-.214.04-.217.038-.22.036-.223.034-.225.032-.229.031-.231.028-.233.027-.236.024-.239.023-.241.02-.242.019-.246.016-.247.015-.249.012-.251.01-.253.008-.255.005-.256.004-.258.001-.258-.001-.256-.004-.255-.005-.253-.008-.251-.01-.249-.012-.247-.015-.245-.016-.243-.019-.241-.02-.238-.023-.236-.024-.234-.027-.231-.028-.228-.031-.226-.032-.223-.034-.22-.036-.217-.038-.214-.04-.211-.041-.208-.043-.204-.045-.201-.046-.198-.048-.195-.05-.19-.051-.187-.053-.184-.054-.179-.056-.176-.057-.172-.059-.167-.06-.164-.061-.159-.063-.155-.064-.151-.066-.074-.033-.072-.033-.072-.034-.07-.034-.069-.035-.068-.035-.067-.035-.066-.035-.064-.036-.063-.036-.062-.036-.061-.036-.06-.037-.058-.037-.057-.037-.056-.038-.055-.038-.053-.038-.052-.038-.051-.039-.049-.039-.049-.039-.046-.039-.046-.04-.044-.04-.043-.04-.041-.04-.04-.041-.039-.041-.037-.041-.036-.041-.034-.041-.033-.042-.032-.042-.03-.042-.029-.042-.027-.042-.026-.043-.024-.043-.023-.043-.021-.043-.02-.043-.018-.044-.017-.043-.015-.044-.013-.044-.012-.044-.011-.045-.009-.044-.007-.045-.006-.045-.004-.045-.002-.045-.001-.045v-17l.001-.045.002-.045.004-.045.006-.045.007-.045.009-.044.011-.045.012-.044.013-.044.015-.044.017-.043.018-.044.02-.043.021-.043.023-.043.024-.043.026-.043.027-.042.029-.042.03-.042.032-.042.033-.042.034-.041.036-.041.037-.041.039-.041.04-.041.041-.04.043-.04.044-.04.046-.04.046-.039.049-.039.049-.039.051-.039.052-.038.053-.038.055-.038.056-.038.057-.037.058-.037.06-.037.061-.036.062-.036.063-.036.064-.036.066-.035.067-.035.068-.035.069-.035.07-.034.072-.034.072-.033.074-.033.151-.066.155-.064.159-.063.164-.061.167-.06.172-.059.176-.057.179-.056.184-.054.187-.053.19-.051.195-.05.198-.048.201-.046.204-.045.208-.043.211-.041.214-.04.217-.038.22-.036.223-.034.226-.032.228-.031.231-.028.234-.027.236-.024.238-.023.241-.02.243-.019.245-.016.247-.015.249-.012.251-.01.253-.008.255-.005.256-.004.258-.001.258.001zm-9.258 20.499v.01l.001.021.003.021.004.022.005.021.006.022.007.022.009.023.01.022.011.023.012.023.013.023.015.023.016.024.017.023.018.024.019.024.021.024.022.025.023.024.024.025.052.049.056.05.061.051.066.051.07.051.075.051.079.052.084.052.088.052.092.052.097.052.102.051.105.052.11.052.114.051.119.051.123.051.127.05.131.05.135.05.139.048.144.049.147.047.152.047.155.047.16.045.163.045.167.043.171.043.176.041.178.041.183.039.187.039.19.037.194.035.197.035.202.033.204.031.209.03.212.029.216.027.219.025.222.024.226.021.23.02.233.018.236.016.24.015.243.012.246.01.249.008.253.005.256.004.259.001.26-.001.257-.004.254-.005.25-.008.247-.011.244-.012.241-.014.237-.016.233-.018.231-.021.226-.021.224-.024.22-.026.216-.027.212-.028.21-.031.205-.031.202-.034.198-.034.194-.036.191-.037.187-.039.183-.04.179-.04.175-.042.172-.043.168-.044.163-.045.16-.046.155-.046.152-.047.148-.048.143-.049.139-.049.136-.05.131-.05.126-.05.123-.051.118-.052.114-.051.11-.052.106-.052.101-.052.096-.052.092-.052.088-.053.083-.051.079-.052.074-.052.07-.051.065-.051.06-.051.056-.05.051-.05.023-.024.023-.025.021-.024.02-.024.019-.024.018-.024.017-.024.015-.023.014-.024.013-.023.012-.023.01-.023.01-.022.008-.022.006-.022.006-.022.004-.022.004-.021.001-.021.001-.021v-4.127l-.077.055-.08.053-.083.054-.085.053-.087.052-.09.052-.093.051-.095.05-.097.05-.1.049-.102.049-.105.048-.106.047-.109.047-.111.046-.114.045-.115.045-.118.044-.12.043-.122.042-.124.042-.126.041-.128.04-.13.04-.132.038-.134.038-.135.037-.138.037-.139.035-.142.035-.143.034-.144.033-.147.032-.148.031-.15.03-.151.03-.153.029-.154.027-.156.027-.158.026-.159.025-.161.024-.162.023-.163.022-.165.021-.166.02-.167.019-.169.018-.169.017-.171.016-.173.015-.173.014-.175.013-.175.012-.177.011-.178.01-.179.008-.179.008-.181.006-.182.005-.182.004-.184.003-.184.002h-.37l-.184-.002-.184-.003-.182-.004-.182-.005-.181-.006-.179-.008-.179-.008-.178-.01-.176-.011-.176-.012-.175-.013-.173-.014-.172-.015-.171-.016-.17-.017-.169-.018-.167-.019-.166-.02-.165-.021-.163-.022-.162-.023-.161-.024-.159-.025-.157-.026-.156-.027-.155-.027-.153-.029-.151-.03-.15-.03-.148-.031-.146-.032-.145-.033-.143-.034-.141-.035-.14-.035-.137-.037-.136-.037-.134-.038-.132-.038-.13-.04-.128-.04-.126-.041-.124-.042-.122-.042-.12-.044-.117-.043-.116-.045-.113-.045-.112-.046-.109-.047-.106-.047-.105-.048-.102-.049-.1-.049-.097-.05-.095-.05-.093-.052-.09-.051-.087-.052-.085-.053-.083-.054-.08-.054-.077-.054v4.127zm0-5.654v.011l.001.021.003.021.004.021.005.022.006.022.007.022.009.022.01.022.011.023.012.023.013.023.015.024.016.023.017.024.018.024.019.024.021.024.022.024.023.025.024.024.052.05.056.05.061.05.066.051.07.051.075.052.079.051.084.052.088.052.092.052.097.052.102.052.105.052.11.051.114.051.119.052.123.05.127.051.131.05.135.049.139.049.144.048.147.048.152.047.155.046.16.045.163.045.167.044.171.042.176.042.178.04.183.04.187.038.19.037.194.036.197.034.202.033.204.032.209.03.212.028.216.027.219.025.222.024.226.022.23.02.233.018.236.016.24.014.243.012.246.01.249.008.253.006.256.003.259.001.26-.001.257-.003.254-.006.25-.008.247-.01.244-.012.241-.015.237-.016.233-.018.231-.02.226-.022.224-.024.22-.025.216-.027.212-.029.21-.03.205-.032.202-.033.198-.035.194-.036.191-.037.187-.039.183-.039.179-.041.175-.042.172-.043.168-.044.163-.045.16-.045.155-.047.152-.047.148-.048.143-.048.139-.05.136-.049.131-.05.126-.051.123-.051.118-.051.114-.052.11-.052.106-.052.101-.052.096-.052.092-.052.088-.052.083-.052.079-.052.074-.051.07-.052.065-.051.06-.05.056-.051.051-.049.023-.025.023-.024.021-.025.02-.024.019-.024.018-.024.017-.024.015-.023.014-.023.013-.024.012-.022.01-.023.01-.023.008-.022.006-.022.006-.022.004-.021.004-.022.001-.021.001-.021v-4.139l-.077.054-.08.054-.083.054-.085.052-.087.053-.09.051-.093.051-.095.051-.097.05-.1.049-.102.049-.105.048-.106.047-.109.047-.111.046-.114.045-.115.044-.118.044-.12.044-.122.042-.124.042-.126.041-.128.04-.13.039-.132.039-.134.038-.135.037-.138.036-.139.036-.142.035-.143.033-.144.033-.147.033-.148.031-.15.03-.151.03-.153.028-.154.028-.156.027-.158.026-.159.025-.161.024-.162.023-.163.022-.165.021-.166.02-.167.019-.169.018-.169.017-.171.016-.173.015-.173.014-.175.013-.175.012-.177.011-.178.009-.179.009-.179.007-.181.007-.182.005-.182.004-.184.003-.184.002h-.37l-.184-.002-.184-.003-.182-.004-.182-.005-.181-.007-.179-.007-.179-.009-.178-.009-.176-.011-.176-.012-.175-.013-.173-.014-.172-.015-.171-.016-.17-.017-.169-.018-.167-.019-.166-.02-.165-.021-.163-.022-.162-.023-.161-.024-.159-.025-.157-.026-.156-.027-.155-.028-.153-.028-.151-.03-.15-.03-.148-.031-.146-.033-.145-.033-.143-.033-.141-.035-.14-.036-.137-.036-.136-.037-.134-.038-.132-.039-.13-.039-.128-.04-.126-.041-.124-.042-.122-.043-.12-.043-.117-.044-.116-.044-.113-.046-.112-.046-.109-.046-.106-.047-.105-.048-.102-.049-.1-.049-.097-.05-.095-.051-.093-.051-.09-.051-.087-.053-.085-.052-.083-.054-.08-.054-.077-.054v4.139zm0-5.666v.011l.001.02.003.022.004.021.005.022.006.021.007.022.009.023.01.022.011.023.012.023.013.023.015.023.016.024.017.024.018.023.019.024.021.025.022.024.023.024.024.025.052.05.056.05.061.05.066.051.07.051.075.052.079.051.084.052.088.052.092.052.097.052.102.052.105.051.11.052.114.051.119.051.123.051.127.05.131.05.135.05.139.049.144.048.147.048.152.047.155.046.16.045.163.045.167.043.171.043.176.042.178.04.183.04.187.038.19.037.194.036.197.034.202.033.204.032.209.03.212.028.216.027.219.025.222.024.226.021.23.02.233.018.236.017.24.014.243.012.246.01.249.008.253.006.256.003.259.001.26-.001.257-.003.254-.006.25-.008.247-.01.244-.013.241-.014.237-.016.233-.018.231-.02.226-.022.224-.024.22-.025.216-.027.212-.029.21-.03.205-.032.202-.033.198-.035.194-.036.191-.037.187-.039.183-.039.179-.041.175-.042.172-.043.168-.044.163-.045.16-.045.155-.047.152-.047.148-.048.143-.049.139-.049.136-.049.131-.051.126-.05.123-.051.118-.052.114-.051.11-.052.106-.052.101-.052.096-.052.092-.052.088-.052.083-.052.079-.052.074-.052.07-.051.065-.051.06-.051.056-.05.051-.049.023-.025.023-.025.021-.024.02-.024.019-.024.018-.024.017-.024.015-.023.014-.024.013-.023.012-.023.01-.022.01-.023.008-.022.006-.022.006-.022.004-.022.004-.021.001-.021.001-.021v-4.153l-.077.054-.08.054-.083.053-.085.053-.087.053-.09.051-.093.051-.095.051-.097.05-.1.049-.102.048-.105.048-.106.048-.109.046-.111.046-.114.046-.115.044-.118.044-.12.043-.122.043-.124.042-.126.041-.128.04-.13.039-.132.039-.134.038-.135.037-.138.036-.139.036-.142.034-.143.034-.144.033-.147.032-.148.032-.15.03-.151.03-.153.028-.154.028-.156.027-.158.026-.159.024-.161.024-.162.023-.163.023-.165.021-.166.02-.167.019-.169.018-.169.017-.171.016-.173.015-.173.014-.175.013-.175.012-.177.01-.178.01-.179.009-.179.007-.181.006-.182.006-.182.004-.184.003-.184.001-.185.001-.185-.001-.184-.001-.184-.003-.182-.004-.182-.006-.181-.006-.179-.007-.179-.009-.178-.01-.176-.01-.176-.012-.175-.013-.173-.014-.172-.015-.171-.016-.17-.017-.169-.018-.167-.019-.166-.02-.165-.021-.163-.023-.162-.023-.161-.024-.159-.024-.157-.026-.156-.027-.155-.028-.153-.028-.151-.03-.15-.03-.148-.032-.146-.032-.145-.033-.143-.034-.141-.034-.14-.036-.137-.036-.136-.037-.134-.038-.132-.039-.13-.039-.128-.041-.126-.041-.124-.041-.122-.043-.12-.043-.117-.044-.116-.044-.113-.046-.112-.046-.109-.046-.106-.048-.105-.048-.102-.048-.1-.05-.097-.049-.095-.051-.093-.051-.09-.052-.087-.052-.085-.053-.083-.053-.08-.054-.077-.054v4.153zm8.74-8.179l-.257.004-.254.005-.25.008-.247.011-.244.012-.241.014-.237.016-.233.018-.231.021-.226.022-.224.023-.22.026-.216.027-.212.028-.21.031-.205.032-.202.033-.198.034-.194.036-.191.038-.187.038-.183.04-.179.041-.175.042-.172.043-.168.043-.163.045-.16.046-.155.046-.152.048-.148.048-.143.048-.139.049-.136.05-.131.05-.126.051-.123.051-.118.051-.114.052-.11.052-.106.052-.101.052-.096.052-.092.052-.088.052-.083.052-.079.052-.074.051-.07.052-.065.051-.06.05-.056.05-.051.05-.023.025-.023.024-.021.024-.02.025-.019.024-.018.024-.017.023-.015.024-.014.023-.013.023-.012.023-.01.023-.01.022-.008.022-.006.023-.006.021-.004.022-.004.021-.001.021-.001.021.001.021.001.021.004.021.004.022.006.021.006.023.008.022.01.022.01.023.012.023.013.023.014.023.015.024.017.023.018.024.019.024.02.025.021.024.023.024.023.025.051.05.056.05.06.05.065.051.07.052.074.051.079.052.083.052.088.052.092.052.096.052.101.052.106.052.11.052.114.052.118.051.123.051.126.051.131.05.136.05.139.049.143.048.148.048.152.048.155.046.16.046.163.045.168.043.172.043.175.042.179.041.183.04.187.038.191.038.194.036.198.034.202.033.205.032.21.031.212.028.216.027.22.026.224.023.226.022.231.021.233.018.237.016.241.014.244.012.247.011.25.008.254.005.257.004.26.001.26-.001.257-.004.254-.005.25-.008.247-.011.244-.012.241-.014.237-.016.233-.018.231-.021.226-.022.224-.023.22-.026.216-.027.212-.028.21-.031.205-.032.202-.033.198-.034.194-.036.191-.038.187-.038.183-.04.179-.041.175-.042.172-.043.168-.043.163-.045.16-.046.155-.046.152-.048.148-.048.143-.048.139-.049.136-.05.131-.05.126-.051.123-.051.118-.051.114-.052.11-.052.106-.052.101-.052.096-.052.092-.052.088-.052.083-.052.079-.052.074-.051.07-.052.065-.051.06-.05.056-.05.051-.05.023-.025.023-.024.021-.024.02-.025.019-.024.018-.024.017-.023.015-.024.014-.023.013-.023.012-.023.01-.023.01-.022.008-.022.006-.023.006-.021.004-.022.004-.021.001-.021.001-.021-.001-.021-.001-.021-.004-.021-.004-.022-.006-.021-.006-.023-.008-.022-.01-.022-.01-.023-.012-.023-.013-.023-.014-.023-.015-.024-.017-.023-.018-.024-.019-.024-.02-.025-.021-.024-.023-.024-.023-.025-.051-.05-.056-.05-.06-.05-.065-.051-.07-.052-.074-.051-.079-.052-.083-.052-.088-.052-.092-.052-.096-.052-.101-.052-.106-.052-.11-.052-.114-.052-.118-.051-.123-.051-.126-.051-.131-.05-.136-.05-.139-.049-.143-.048-.148-.048-.152-.048-.155-.046-.16-.046-.163-.045-.168-.043-.172-.043-.175-.042-.179-.041-.183-.04-.187-.038-.191-.038-.194-.036-.198-.034-.202-.033-.205-.032-.21-.031-.212-.028-.216-.027-.22-.026-.224-.023-.226-.022-.231-.021-.233-.018-.237-.016-.241-.014-.244-.012-.247-.011-.25-.008-.254-.005-.257-.004-.26-.001-.26.001z" transform="scale(.5)"></path></symbol></defs><defs><symbol height="24" width="24" id="clock"><path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0-2c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5.848 12.459c.202.038.202.333.001.372-1.907.361-6.045 1.111-6.547 1.111-.719 0-1.301-.582-1.301-1.301 0-.512.77-5.447 1.125-7.445.034-.192.312-.181.343.014l.985 6.238 5.394 1.011z" transform="scale(.5)"></path></symbol></defs><line stroke="#999" stroke-width="0.5px" class="200" y2="961" x2="75" y1="80" x1="75" id="actor0"></line><g class="actor-man"><line y2="45" x2="75" y1="25" x1="75" id="actor-man-torso0"></line><line y2="33" x2="93" y1="33" x1="57" id="actor-man-arms0"></line><line y2="45" x2="75" y1="60" x1="57"></line><line y2="60" x2="91" y1="45" x1="75"></line><circle height="65" width="150" r="15" cy="10" cx="75"></circle><text style="text-anchor: middle; font-size: 14px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="67.5" x="75"><tspan dy="0" x="75">You</tspan></text></g><g><line stroke="#999" stroke-width="0.5px" class="200" y2="961" x2="275" y1="5" x1="275" id="actor1"></line><g id="root-1"><rect class="actor" ry="3" rx="3" height="65" width="150" stroke="#666" fill="#eaeaea" y="0" x="200"></rect><text style="text-anchor: middle; font-size: 14px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="32.5" x="275"><tspan dy="0" x="275">Frontend</tspan></text></g></g><g><line stroke="#999" stroke-width="0.5px" class="200" y2="961" x2="509" y1="5" x1="509" id="actor2"></line><g id="root-2"><rect class="actor" ry="3" rx="3" height="65" width="150" stroke="#666" fill="#eaeaea" y="0" x="434"></rect><text style="text-anchor: middle; font-size: 14px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="32.5" x="509"><tspan dy="0" x="509">IPyWidgets</tspan></text></g></g><g><line stroke="#999" stroke-width="0.5px" class="200" y2="961" x2="747" y1="5" x1="747" id="actor3"></line><g id="root-3"><rect class="actor" ry="3" rx="3" height="65" width="150" stroke="#666" fill="#eaeaea" y="0" x="672"></rect><text style="text-anchor: middle; font-size: 14px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="32.5" x="747"><tspan dy="0" x="747">Reacton</tspan></text></g></g><g><line stroke="#999" stroke-width="0.5px" class="200" y2="961" x2="947" y1="5" x1="947" id="actor4"></line><g id="root-4"><rect class="actor" ry="3" rx="3" height="65" width="150" stroke="#666" fill="#eaeaea" y="0" x="872"></rect><text style="text-anchor: middle; font-size: 14px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="32.5" x="947"><tspan dy="0" x="947">ButtonClick</tspan></text></g></g><g><line stroke="#999" stroke-width="0.5px" class="200" y2="961" x2="1147" y1="5" x1="1147" id="actor5"></line><g id="root-5"><rect class="actor" ry="3" rx="3" height="65" width="150" stroke="#666" fill="#eaeaea" y="0" x="1072"></rect><text style="text-anchor: middle; font-size: 14px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="32.5" x="1147"><tspan dy="0" x="1147">Solara</tspan></text></g></g><defs><marker orient="auto" markerHeight="12" markerWidth="12" markerUnits="userSpaceOnUse" refY="5" refX="9" id="arrowhead"><path d="M 0 0 L 10 5 L 0 10 z"></path></marker></defs><defs><marker refY="4" refX="16" orient="auto" markerHeight="8" markerWidth="15" id="crosshead"><path style="stroke-dasharray: 0, 0;" d="M 9,2 V 6 L16,4 Z" stroke-width="1px" stroke="#000000" fill="black"></path><path style="stroke-dasharray: 0, 0;" d="M 0,1 L 6,7 M 6,1 L 0,7" stroke-width="1px" stroke="#000000" fill="none"></path></marker></defs><defs><marker orient="auto" markerHeight="28" markerWidth="20" refY="7" refX="18" id="filled-head"><path d="M 18,7 L9,13 L14,7 L9,1 Z"></path></marker></defs><defs><marker orient="auto" markerHeight="40" markerWidth="60" refY="15" refX="15" id="sequencenumber"><circle r="6" cy="15" cx="15"></circle></marker></defs><g><rect class="activation0" ry="0" rx="0" height="241.5" width="10" stroke="#666" fill="#EDF2AE" y="153" x="742"></rect></g><g><rect class="activation0" ry="0" rx="0" height="46" width="10" stroke="#666" fill="#EDF2AE" y="572.5" x="942"></rect></g><g><rect class="activation0" ry="0" rx="0" height="251.5" width="10" stroke="#666" fill="#EDF2AE" y="608.5" x="742"></rect></g><g><rect class="activation0" ry="0" rx="0" height="60.5" width="10" stroke="#666" fill="#EDF2AE" y="664.5" x="942"></rect></g><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="80" x="1047">el=ButtonClick()</text><line style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" y2="109" x2="947" y1="109" x1="1147"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="124" x="947">render(el)</text><line style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" y2="153" x2="747" y1="153" x1="1147"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="168" x="850">render()</text><line style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" y2="197" x2="947" y1="197" x1="752"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="212" x="850">use_state(0)</text><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="230" x="850">(returns 0)</text><line style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" y2="259.5" x2="752" y1="259.5" x1="947"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="275" x="752">reconsolidate()</text><path style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" d="M 752,303.5 C 812,293.5 812,333.5 752,323.5"></path><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="349" x="626">create Button</text><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="366" x="626">description="Clicked: 0"</text><line style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" y2="394.5" x2="509" y1="394.5" x1="742"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="410" x="392">create Button view</text><line style="stroke-dasharray: 3, 3; fill: none;" marker-end="url(#filled-head)" stroke="none" stroke-width="2" class="messageLine1" y2="438.5" x2="275" y1="438.5" x1="509"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="454" x="175">clicks button</text><line style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" y2="482.5" x2="275" y1="482.5" x1="75"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="498" x="392">Button clicked</text><line style="stroke-dasharray: 3, 3; fill: none;" marker-end="url(#filled-head)" stroke="none" stroke-width="2" class="messageLine1" y2="526.5" x2="509" y1="526.5" x1="275"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="542" x="728">on_click</text><line style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" y2="572.5" x2="947" y1="572.5" x1="509"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="588" x="845">set_clicks(1)</text><line style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" y2="618.5" x2="747" y1="618.5" x1="942"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="634" x="850">render()</text><line style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" y2="662.5" x2="947" y1="662.5" x1="752"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="678" x="847">use_state(0)</text><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="696" x="847"> (now returns 1)</text><line style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" y2="725" x2="752" y1="725" x1="942"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="740" x="752">reconsolidate()</text><path style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" d="M 752,769 C 812,759 812,799 752,789"></path><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="814" x="626">update Button</text><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="831" x="626">description="Clicked 1"</text><line style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" y2="860" x2="509" y1="860" x1="742"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="875" x="392">update Button</text><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="892" x="392">description="Clicked 1"</text><line style="stroke-dasharray: 3, 3; fill: none;" marker-end="url(#filled-head)" stroke="none" stroke-width="2" class="messageLine1" y2="921" x2="275" y1="921" x1="509"></line><g class="actor-man"><line y2="986" x2="75" y1="966" x1="75" id="actor-man-torso5"></line><line y2="974" x2="93" y1="974" x1="57" id="actor-man-arms5"></line><line y2="986" x2="75" y1="1001" x1="57"></line><line y2="1001" x2="91" y1="986" x1="75"></line><circle height="65" width="150" r="15" cy="951" cx="75"></circle><text style="text-anchor: middle; font-size: 14px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="1008.5" x="75"><tspan dy="0" x="75">You</tspan></text></g><g><rect class="actor" ry="3" rx="3" height="65" width="150" stroke="#666" fill="#eaeaea" y="941" x="200"></rect><text style="text-anchor: middle; font-size: 14px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="973.5" x="275"><tspan dy="0" x="275">Frontend</tspan></text></g><g><rect class="actor" ry="3" rx="3" height="65" width="150" stroke="#666" fill="#eaeaea" y="941" x="434"></rect><text style="text-anchor: middle; font-size: 14px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="973.5" x="509"><tspan dy="0" x="509">IPyWidgets</tspan></text></g><g><rect class="actor" ry="3" rx="3" height="65" width="150" stroke="#666" fill="#eaeaea" y="941" x="672"></rect><text style="text-anchor: middle; font-size: 14px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="973.5" x="747"><tspan dy="0" x="747">Reacton</tspan></text></g><g><rect class="actor" ry="3" rx="3" height="65" width="150" stroke="#666" fill="#eaeaea" y="941" x="872"></rect><text style="text-anchor: middle; font-size: 14px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="973.5" x="947"><tspan dy="0" x="947">ButtonClick</tspan></text></g><g><rect class="actor" ry="3" rx="3" height="65" width="150" stroke="#666" fill="#eaeaea" y="941" x="1072"></rect><text style="text-anchor: middle; font-size: 14px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="973.5" x="1147"><tspan dy="0" x="1147">Solara</tspan></text></g></svg></div> <p>In words</p> <ol><li>Solara create <code>el = ButtonClick()</code> from your component.</li> <li>The <code>display(el)</code> triggers the call to Reacton.</li> <li>The render call enters the render phase, which will call the function body (which we call render function) of the <code>ButtonClick</code> component.</li> <li>Our ButtonClick render function calls <a href="/api/use_state"><code>use_state</code></a>. Because this is our first render phase, this returns the initial value (0).</li> <li>The ButtonClick render function returns a Button element (not a widget!) with <code>description="Clicked: 0 times"</code>.</li> <li>The Reacton render call is done with the render phase, and enters the reconciliation phase, where it looks at the difference between the real widgets and the virtual widgets tree (represented by the Reacton elements). We find there is no previous widget associated with the virtual widget (or element) and decide to create a widget.</li> <li>Asynchronously via the Jupyter protocol, a widget model and view are created and displayed to the user in the browser.</li> <li>The user clicks on the button.</li> <li>The <code>on_click</code> handler gets triggered on the Python side, inside of the <code>ButtonClick</code> component (called <code>my_click_handler</code>).</li> <li><code>my_click_handler</code> handler calls <code>set_clicks(1)</code> which triggers a re-render.</li> <li>The render call enters the render phase, which calls the render function of <code>ButtonClick</code> for the second time.</li> <li>Our ButtonClick render function calls <a href="/docs/understanding/reacton-basics#use_state"><code>reacton.use_state</code></a>. Because this is our second render phase, this returns the last set value, which is 1.</li> <li>The ButtonClick render function returns a new Button element (not a widget!) with the description <code>"Clicked: 1 times"</code>.</li> <li>The Reacton render call is done with the render phase, and enters the reconciliation phase, where it looks at the difference between the real widgets and the virtual widgets tree (represented by the Reacton elements). We find there is a widget associated with the virtual widget (or element) and decide to update the changed attributes of the widget and set <code>description</code> to <code>"Clicked: 1 times"</code>.</li> <li>Asynchronously via the Jupyter protocol, the widet model and view are being updated in the browser.</li></ol></div></div><div class="v-sheet theme--light elevation-0 d-flex" style="flex-direction: row; align-items: stretch; flex-grow: 1;"><a tag="a" href="/docs/understanding/reacton"><button type="button" class="v-btn v-btn--flat v-btn--text theme--light v-size--default"><span class="v-btn__content"><i aria-hidden="true" class="v-icon notranslate v-icon--left mdi mdi-arrow-left theme--light"></i>Reacton</span></button></a><div class="spacer"></div><a tag="a" href="/docs/understanding/anatomy"><button type="button" class="v-btn v-btn--flat v-btn--text theme--light v-size--default"><span class="v-btn__content"><i aria-hidden="true" class="v-icon notranslate v-icon--left mdi mdi-arrow-right theme--light"></i>Anatomy</span></button></a></div></div></div></main></div><aside class="v-navigation-drawer v-navigation-drawer--close v-navigation-drawer--fixed v-navigation-drawer--right theme--light" style="height: 100vh; top: 0px; transform: translateX(100%); width: 256px;" data-booted="true"><div class="v-navigation-drawer__content"><div role="list" class="v-list v-sheet v-sheet--tile theme--light v-list--nav"><div role="listbox" class="v-item-group theme--light v-list-item-group"><a tag="a" href="/"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Home</div></div></div></a><a tag="a" href="/showcase"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Showcase</div></div></div></a><a tag="a" href="/docs"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Docs</div></div></div></a><a tag="a" href="/api"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">API</div></div></div></a><a tag="a" href="/examples"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Examples</div></div></div></a></div></div></div><div class="v-navigation-drawer__border"></div></aside><aside class="v-navigation-drawer v-navigation-drawer--close v-navigation-drawer--fixed theme--light" style="height: 100vh; top: 0px; transform: translateX(-100%); width: 256px;" data-booted="true"><div class="v-navigation-drawer__content"><div role="list" class="v-list v-sheet v-sheet--tile theme--light v-list--nav"><div role="listbox" class="v-item-group theme--light v-list-item-group"><a tag="a" href="/docs"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Introduction</div></div></div></a><a tag="a" href="/docs/installing"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Installing</div></div></div></a><a tag="a" href="/docs/quickstart"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Quickstart</div></div></div></a><div class="v-list-group v-list-group--active v-list-group--no-action primary--text"><div tabindex="0" aria-expanded="true" role="button" class="v-list-group__header v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Tutorial</div></div><div class="v-list-item__icon v-list-group__header__append-icon"><i aria-hidden="true" class="v-icon notranslate mdi mdi-chevron-down theme--light"></i></div></div><div class="v-list-group__items"><a tag="a" href="/docs/tutorial"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Overview</div></div></div></a><a tag="a" href="/docs/tutorial/data-science"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Data Science</div></div></div></a><a tag="a" href="/docs/tutorial/web-app"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Web App</div></div></div></a><a tag="a" href="/docs/tutorial/ipywidgets"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Ipywidgets</div></div></div></a><a tag="a" href="/docs/tutorial/streamlit"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Streamlit</div></div></div></a><a tag="a" href="/docs/tutorial/dash"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Dash</div></div></div></a></div></div><div class="v-list-group v-list-group--active v-list-group--no-action primary--text"><div tabindex="0" aria-expanded="true" role="button" class="v-list-group__header v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Fundamentals</div></div><div class="v-list-item__icon v-list-group__header__append-icon"><i aria-hidden="true" class="v-icon notranslate mdi mdi-chevron-down theme--light"></i></div></div><div class="v-list-group__items"><a tag="a" href="/docs/fundamentals"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Overview</div></div></div></a><a tag="a" href="/docs/fundamentals/components"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Components</div></div></div></a><a tag="a" href="/docs/fundamentals/state-management"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">State Management</div></div></div></a></div></div><div class="v-list-group v-list-group--active v-list-group--no-action primary--text"><div tabindex="0" aria-expanded="true" role="button" class="v-list-group__header v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Howto</div></div><div class="v-list-item__icon v-list-group__header__append-icon"><i aria-hidden="true" class="v-icon notranslate mdi mdi-chevron-down theme--light"></i></div></div><div class="v-list-group__items"><a tag="a" href="/docs/howto"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Overview</div></div></div></a><a tag="a" href="/docs/howto/contribute"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Contribute</div></div></div></a><a tag="a" href="/docs/howto/multipage"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Multipage</div></div></div></a><a tag="a" href="/docs/howto/layout"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Layout</div></div></div></a><a tag="a" href="/docs/howto/testing"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Testing</div></div></div></a><a tag="a" href="/docs/howto/embed"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Embed</div></div></div></a><a tag="a" href="/docs/howto/ipywidget-libraries"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Ipywidget Libraries</div></div></div></a></div></div><div class="v-list-group v-list-group--active v-list-group--no-action primary--text"><div tabindex="0" aria-expanded="true" role="button" class="v-list-group__header v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Reference</div></div><div class="v-list-item__icon v-list-group__header__append-icon"><i aria-hidden="true" class="v-icon notranslate mdi mdi-chevron-down theme--light"></i></div></div><div class="v-list-group__items"><a tag="a" href="/docs/reference"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Overview</div></div></div></a><a tag="a" href="/docs/reference/static-files"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Static Files</div></div></div></a><a tag="a" href="/docs/reference/asset-files"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Asset Files</div></div></div></a><a tag="a" href="/docs/reference/static-site-generation"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Static Site Generation</div></div></div></a><a tag="a" href="/docs/reference/search"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Search</div></div></div></a><a tag="a" href="/docs/reference/reloading"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Reloading</div></div></div></a><a tag="a" href="/docs/reference/notebook-support"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Notebook Support</div></div></div></a><a tag="a" href="/docs/reference/caching"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Caching</div></div></div></a></div></div><div class="v-list-group v-list-group--active v-list-group--no-action primary--text"><div tabindex="0" aria-expanded="true" role="button" class="v-list-group__header v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Understanding</div></div><div class="v-list-item__icon v-list-group__header__append-icon"><i aria-hidden="true" class="v-icon notranslate mdi mdi-chevron-down theme--light"></i></div></div><div class="v-list-group__items"><a tag="a" href="/docs/understanding"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Introduction</div></div></div></a><a tag="a" href="/docs/understanding/ipywidgets"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Ipywidgets</div></div></div></a><a tag="a" href="/docs/understanding/ipyvuetify"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Ipyvuetify</div></div></div></a><a tag="a" href="/docs/understanding/reacton"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Reacton</div></div></div></a><a tag="a" href="/docs/understanding/reacton-basics"><div tabindex="0" role="listitem" aria-selected="true" class="v-list-item text--primary v-list-item--active v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Reacton Basics</div></div></div></a><a tag="a" href="/docs/understanding/anatomy"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Anatomy</div></div></div></a><a tag="a" href="/docs/understanding/rules-of-hooks"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Rules Of Hooks</div></div></div></a><a tag="a" href="/docs/understanding/containers"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Containers</div></div></div></a><a tag="a" href="/docs/understanding/solara"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Solara</div></div></div></a><a tag="a" href="/docs/understanding/routing"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Routing</div></div></div></a><a tag="a" href="/docs/understanding/solara-server"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Solara Server</div></div></div></a><a tag="a" href="/docs/understanding/voila"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Voila</div></div></div></a></div></div><div class="v-list-group v-list-group--active v-list-group--no-action primary--text"><div tabindex="0" aria-expanded="true" role="button" class="v-list-group__header v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Deploying</div></div><div class="v-list-item__icon v-list-group__header__append-icon"><i aria-hidden="true" class="v-icon notranslate mdi mdi-chevron-down theme--light"></i></div></div><div class="v-list-group__items"><a tag="a" href="/docs/deploying"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Overview</div></div></div></a><a tag="a" href="/docs/deploying/self-hosted"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Self Hosted</div></div></div></a><a tag="a" href="/docs/deploying/cloud-hosted"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Cloud Hosted</div></div></div></a></div></div><div class="v-list-group v-list-group--active v-list-group--no-action primary--text"><div tabindex="0" aria-expanded="true" role="button" class="v-list-group__header v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Enterprise</div></div><div class="v-list-item__icon v-list-group__header__append-icon"><i aria-hidden="true" class="v-icon notranslate mdi mdi-chevron-down theme--light"></i></div></div><div class="v-list-group__items"><a tag="a" href="/docs/enterprise"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Overview</div></div></div></a><a tag="a" href="/docs/enterprise/oauth"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Oauth</div></div></div></a></div></div><div class="v-list-group v-list-group--active v-list-group--no-action primary--text"><div tabindex="0" aria-expanded="true" role="button" class="v-list-group__header v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Development</div></div><div class="v-list-item__icon v-list-group__header__append-icon"><i aria-hidden="true" class="v-icon notranslate mdi mdi-chevron-down theme--light"></i></div></div><div class="v-list-group__items"><a tag="a" href="/docs/development"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Setup</div></div></div></a></div></div><a tag="a" href="/docs/troubleshoot"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Troubleshoot</div></div></div></a><a tag="a" href="/docs/contact"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Contact</div></div></div></a><a tag="a" href="/docs/faq"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Faq</div></div></div></a><div class="v-list-group v-list-group--active v-list-group--no-action primary--text"><div tabindex="0" aria-expanded="true" role="button" class="v-list-group__header v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">Lab</div></div><div class="v-list-item__icon v-list-group__header__append-icon"><i aria-hidden="true" class="v-icon notranslate mdi mdi-chevron-down theme--light"></i></div></div><div class="v-list-group__items"><a tag="a" href="/docs/lab"><div tabindex="0" role="listitem" aria-selected="false" class="v-list-item v-list-item--link theme--light"><div class="v-list-item__content"><div class="v-list-item__title">What Is Lab</div></div></div></a></div></div></div></div></div><div class="v-navigation-drawer__border"></div></aside></section></div></div></div> <div style="right: 0px; bottom: 0px; position: absolute; padding: 10px;"><b>This website runs on <a href=" https://solara.dev">Solara</a></b></div></div> <div class="v-overlay theme--dark" style="z-index: 5;"><div class="v-overlay__scrim" style="opacity: 0; background-color: rgb(33, 33, 33); border-color: rgb(33, 33, 33);"></div></div> <div role="dialog" class="v-dialog__container"><!----></div> <!----> <div class="v-menu" style="z-index: 100001;"><!----></div></div></div>
+    
+    <script src="/_solara/cdn/@widgetti/solara-vuetify-app@5.0.2/dist/solara-vuetify-app8.min.js"></script>
+    <script src="/_solara/cdn/mermaid@9.1.7/dist/mermaid.min.js"></script>
+    
+    <script>
+        solara.rootPath = "";
+        console.log("rootPath", solara.rootPath);
+    </script>
+
+    <script src="/static/assets/custom.js"></script>
+    <script src="/static/assets/theme.js"></script>
+
+    <script src="/_solara/cdn/requirejs@2.3.6/require.js" crossorigin="anonymous">
+    </script>
+    <script src="/static/main-vuetify.js"></script>
+    <script src="/static/ansi.js"></script>
+
+    <script>
+        solara.production = true;
+        const themeVariants = ['light', 'dark', 'auto']
+        solara.preRendered = 0 > 0
+        var theme = {"loader": "solara", "variant": "light", "variant_user_selectable": true}
+        if (theme.variant_user_selectable) {
+            if (localStorage.getItem('theme.variant')) {
+                theme.variant = JSON.parse(localStorage.getItem('theme.variant'))
+            }
+        }
+        function prefersDarkScheme() {
+            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        }
+        function inDarkMode() {
+            if (theme.variant == 'auto') {
+                return prefersDarkScheme();
+            }
+            else {
+                return theme.variant == 'dark';
+            }
+        }
+    </script>
+
+    <script>
+        window.solara.browser_platform = false;
+        
+        var debug = true;
+        var app = new Vue({
+            vuetify: new Vuetify({
+                theme: {
+                    dark: inDarkMode(),
+                    themes: vuetifyThemes,
+                },
+            }),
+            // if we do prerendering, keep it unmounted, and mount
+            // when loading becomes false
+            el: solara.preRendered ? null : '#app' ,
+            template: '#vue-app-template',
+            created() {
+                const original_$forceUpdate = this.$forceUpdate.bind(this);
+                this.$forceUpdate = (() => {
+                    this.forceUpdateTrigger += 1;
+                    original_$forceUpdate();
+                });
+            },
+            mounted() {
+                document.querySelector('#app').removeAttribute("style");
+                // listen to change in preferred color scheme (e.g if choosing dark in OSX)
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+                    this.$vuetify.theme.dark = inDarkMode();
+                });
+            },
+            methods: {
+                stateReset() {
+                    console.log('reset')
+                    msg = { "type": "state_reset", "reason": "user command" }
+                    wsWatchdog.send(JSON.stringify(msg))
+                },
+                setCancelAutoRefresh() {
+                    this.needsRefresh = false;
+                    this.cancelAutoRefresh = true;
+                },
+                reload() {
+                    location.reload();
+                },
+            },
+            computed: {
+                themeVariantIndex: {
+                    get() {
+                        return themeVariants.indexOf(theme.variant)
+                    },
+                    set(value) {
+                        theme.variant = themeVariants[value]
+                        this.$vuetify.theme.dark = inDarkMode()
+                        localStorage.setItem('theme.variant', JSON.stringify(theme.variant))
+                    }
+                }
+            },
+            watch: {
+                kernelBusy: function (value) {
+                    if(this._lastBusyTimer) {
+                        clearTimeout(this._lastBusyTimer)
+                    }
+                    if(value) {
+                        this._lastBusyTimer = setTimeout(() => {
+                            this.kernelBusyLong = value;
+                        }, 300);
+                    } else {
+                        this.kernelBusyLong = value;
+                    }
+                },
+                loading: function (value) {
+                    // if preRendered, the app is not mounted yet
+                    // so we mount it when loading becomes false
+                    if (solara.preRendered && !this.mounted) {
+                        this.isMounted = true;
+                        this.$mount("#app")
+                    } else {
+                        this.isMounted = true;
+                    }
+                },
+                needsRefresh: function (value) {
+                    if (this.needsRefresh && !this.cancelAutoRefresh && !solara.production) {
+                        console.log('value for needRefresh', value);
+                        setTimeout(() => {
+                            console.log('this.autoRefreshCount', this.autoRefreshCount)
+                            this.autoRefreshCount = this.autoRefreshCount - 1;
+                        }, 1000);
+                    }
+                },
+                autoRefreshCount: function (value) {
+                    console.log('value for autoRefreshCount', value);
+                    if (value == 0) {
+                        if (!this.cancelAutoRefresh)
+                            this.reload();
+                    } else if (value > 0) {
+                        setTimeout(() => {
+                            console.log('this.autoRefreshCount!', this.autoRefreshCount)
+                            this.autoRefreshCount = this.autoRefreshCount - 1;
+                        }, 1000);
+                    }
+                }
+            },
+            data() {
+                return {
+                    forceUpdateTrigger: 0,
+                    loading_text: "Loading resources",
+                    loadingPercentage: -1,
+                    loading: true,
+                    title: "No title",
+                    solaraDebugMessages: [],
+                    outputMessages: [],
+                    theme: theme,
+                    debug: debug,
+                    connectionStatus: null,
+                    wasConnected: false,
+                    needsRefresh: false,
+                    cancelAutoRefresh: false,
+                    autoRefreshCount: 3,
+                    kernelBusy: false,
+                    isMounted: false,
+                    loadingPage: false,
+                    _lastBusyTimer: null,
+                    kernelBusyLong: false,
+                    // outputMessages: [{ name: 'stderr', text: 'lala' }],
+                }
+            }
+        });
+
+        // Loading classic notebook extensions.
+        window.enable_nbextensions = true;
+        requirejs.config({
+            baseUrl: '/static/',
+            waitSeconds: 3000,
+            map: {
+                '*': {
+                        'jupyter-vue': 'nbextensions/jupyter-vue/nodeps',
+            'jupyter-vuetify': 'nbextensions/jupyter-vuetify/nodeps',
+            },
+                }
+            });
+        requirejs([
+            "/static/nbextensions/jupyter-leaflet/extension.js",
+            "/static/nbextensions/ipycanvas/extension.js",
+            "/static/nbextensions/jupyterlab-plotly/extension.js",
+            "/static/nbextensions/bqplot/extension.js",
+            
+        ]);
+        (async function () {
+            await Promise.all([
+                solaraInit('solara-main')
+            ]);
+        })();
+
+    </script>
+
+</body></html>
